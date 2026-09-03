@@ -1,0 +1,4 @@
+torch
+nemo_toolkit[asr]
+pyannote.audio
+huggingface_hub
