@@ -38,7 +38,7 @@ class Diarizer:
 
         self.device = resolve_device(device)
         log(f"Loading diarization model {model_id} on {self.device} ...")
-        self.pipeline = Pipeline.from_pretrained(model_id, use_auth_token=hf_token)
+        self.pipeline = Pipeline.from_pretrained(model_id, token=hf_token)
         if self.pipeline is None:
             raise RuntimeError(
                 f"Failed to load {model_id}. Make sure you've accepted its user "

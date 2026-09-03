@@ -62,6 +62,19 @@ Run `python transcribe.py --help` for the full flag list (device selection, cust
   }
   ```
 
+## Testing
+
+```
+pip install -r requirements-dev.txt
+pytest                        # everything
+pytest -m "not integration"   # fast unit tests only (merge/formats logic, no models)
+```
+
+The integration tests (ASR, diarization, CLI end-to-end) transcribe a real recording at
+`_test-data/my voice.aifc`, which is a personal voice sample kept out of version control
+(see `.gitignore`) — anyone without that file gets those tests skipped automatically rather
+than failing. Drop your own short recording at that path to exercise them locally.
+
 ## Notes / known limitations
 
 - Speaker labels are `SPEAKER_00`, `SPEAKER_01`, ... (pyannote's generic labels, not names) —

@@ -11,7 +11,7 @@ TARGET_SAMPLE_RATE = 16000
 # Extensions we'll pick up automatically when a directory is passed on the CLI.
 # ffmpeg supports far more than this; the list just controls directory scanning.
 KNOWN_AUDIO_EXTENSIONS = {
-    ".m4a", ".mp3", ".wav", ".flac", ".ogg", ".aac", ".wma",
+    ".m4a", ".mp3", ".wav", ".flac", ".ogg", ".aac", ".wma", ".aif", ".aiff", ".aifc",
     ".mp4", ".mov", ".mkv", ".webm",
 }
 
