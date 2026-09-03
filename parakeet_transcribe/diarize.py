@@ -71,7 +71,10 @@ class Diarizer:
             if max_speakers is not None:
                 kwargs["max_speakers"] = max_speakers
 
-        annotation = self.pipeline(str(wav_path), **kwargs)
+        output = self.pipeline(str(wav_path), **kwargs)
+        # pyannote.audio 4.x wraps the Annotation in a DiarizeOutput dataclass;
+        # older versions returned the Annotation directly.
+        annotation = getattr(output, "speaker_diarization", output)
         turns = [
             SpeakerTurn(speaker=speaker, start=float(turn.start), end=float(turn.end))
             for turn, _, speaker in annotation.itertracks(yield_label=True)

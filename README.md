@@ -71,9 +71,10 @@ pytest -m "not integration"   # fast unit tests only (merge/formats logic, no mo
 ```
 
 The integration tests (ASR, diarization, CLI end-to-end) transcribe a real recording at
-`_test-data/my voice.aifc`, which is a personal voice sample kept out of version control
-(see `.gitignore`) — anyone without that file gets those tests skipped automatically rather
-than failing. Drop your own short recording at that path to exercise them locally.
+`_test-data/sample.<ext>` (any audio format ffmpeg can read, e.g. `sample.wav`, `sample.m4a`).
+This is a personal recording each developer keeps out of version control (see `.gitignore`) —
+anyone without that file gets those tests skipped automatically rather than failing. Drop your
+own short recording at that path to exercise them locally.
 
 ## Notes / known limitations
 
