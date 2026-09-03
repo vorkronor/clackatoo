@@ -32,7 +32,7 @@ class Diarizer:
             raise RuntimeError(
                 "A Hugging Face access token is required for speaker diarization. "
                 "Pass --hf-token, set the HF_TOKEN environment variable, or run "
-                "`huggingface-cli login`. You must also accept the user conditions for "
+                "`hf auth login`. You must also accept the user conditions for "
                 "pyannote/segmentation-3.0 and pyannote/speaker-diarization-3.1 on huggingface.co."
             )
 

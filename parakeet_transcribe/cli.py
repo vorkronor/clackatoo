@@ -46,7 +46,14 @@ def parse_args(argv=None) -> argparse.Namespace:
 
 
 def resolve_hf_token(cli_token: str | None) -> str | None:
-    return cli_token or os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN")
+    from huggingface_hub import get_token
+
+    return (
+        cli_token
+        or os.environ.get("HF_TOKEN")
+        or os.environ.get("HUGGINGFACE_TOKEN")
+        or get_token()
+    )
 
 
 def output_paths(src: Path, output_dir: Path | None, formats: list[str]) -> dict[str, Path]:
@@ -88,7 +95,7 @@ def run_check(args: argparse.Namespace) -> int:
         if token:
             log("Hugging Face token: found")
         else:
-            log("Hugging Face token: NOT found (set --hf-token or HF_TOKEN, or run `huggingface-cli login`)")
+            log("Hugging Face token: NOT found (set --hf-token or HF_TOKEN, or run `hf auth login`)")
             ok = False
 
     try:
