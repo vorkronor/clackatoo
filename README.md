@@ -19,7 +19,7 @@ Any input format ffmpeg can read (.m4a, .mp3, .wav, .mp4, ...) is supported.
    - Create a token at [hf.co/settings/tokens](https://huggingface.co/settings/tokens) (read access is enough).
    - Accept the user conditions for [pyannote/segmentation-3.0](https://huggingface.co/pyannote/segmentation-3.0)
      and [pyannote/speaker-diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1).
-   - Either run `huggingface-cli login`, set `HF_TOKEN` in your environment, or pass `--hf-token`.
+   - Either run `hf auth login`, set `HF_TOKEN` in your environment, or pass `--hf-token`.
 4. Sanity check everything is wired up before running on real audio:
    ```
    python transcribe.py --check
