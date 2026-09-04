@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from . import audio
 from .util import log, resolve_device
 
 DEFAULT_MODEL_ID = "nvidia/parakeet-tdt-0.6b-v3"
@@ -16,6 +17,12 @@ DEFAULT_MODEL_ID = "nvidia/parakeet-tdt-0.6b-v3"
 # Below the threshold we keep full attention for the best accuracy.
 LONG_AUDIO_THRESHOLD_SEC = 20 * 60
 LOCAL_ATTENTION_CONTEXT = [256, 256]
+
+# Hard ceiling for a single --chunk-minutes chunk, regardless of how large a value
+# is requested: this keeps every chunk safely below LONG_AUDIO_THRESHOLD_SEC, since
+# the local-attention path above has been observed to both hit unimplemented ops on
+# some MPS backends and use far more memory than its "bounded" design intends.
+ABSOLUTE_MAX_CHUNK_SEC = 15 * 60
 
 
 @dataclass
@@ -94,3 +101,46 @@ class ParakeetASR:
             for s in segment_ts
         ]
         return AsrResult(text=hyp.text, words=words, segments=segments)
+
+    def transcribe_long_form(
+        self,
+        wav_path: Path,
+        duration_sec: float,
+        chunk_minutes: float,
+        tmp_dir: Path,
+    ) -> AsrResult:
+        """Like transcribe(), but splits audio above chunk_minutes into silence-aligned
+        chunks first, transcribing each independently and merging the results.
+
+        Keeping chunks short avoids LONG_AUDIO_THRESHOLD_SEC's local-attention path
+        entirely for typical recordings, which sidesteps both an MPS backend op gap
+        and much higher memory use than that path's "bounded" design suggests.
+        Pass chunk_minutes <= 0 to disable and always transcribe in one shot.
+        """
+        max_chunk_sec = min(chunk_minutes * 60 * 1.5, ABSOLUTE_MAX_CHUNK_SEC) if chunk_minutes > 0 else None
+        if max_chunk_sec is None or duration_sec <= max_chunk_sec:
+            return self.transcribe(wav_path, duration_sec=duration_sec)
+
+        log(
+            f"Recording is {duration_sec / 60:.1f} min; splitting into ~{chunk_minutes:.1f} "
+            "min chunks at silence for ASR."
+        )
+        silences = audio.detect_silences(wav_path)
+        bounds = audio.plan_chunks(
+            duration_sec, silences, target_sec=chunk_minutes * 60, max_sec=max_chunk_sec
+        )
+        chunks_dir = tmp_dir / f"{wav_path.stem}_asr_chunks"
+        chunk_paths = audio.split_wav_into_chunks(wav_path, chunks_dir, bounds)
+
+        texts: list[str] = []
+        all_words: list[Word] = []
+        all_segments: list[Segment] = []
+        for (start, end), chunk_path in zip(bounds, chunk_paths):
+            log(f"  chunk {start / 60:.1f}-{end / 60:.1f} min")
+            result = self.transcribe(chunk_path, duration_sec=end - start)
+            if result.text:
+                texts.append(result.text)
+            all_words.extend(Word(w.text, w.start + start, w.end + start) for w in result.words)
+            all_segments.extend(Segment(s.text, s.start + start, s.end + start) for s in result.segments)
+
+        return AsrResult(text=" ".join(texts), words=all_words, segments=all_segments)

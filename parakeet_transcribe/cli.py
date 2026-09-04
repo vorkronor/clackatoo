@@ -33,6 +33,11 @@ def parse_args(argv=None) -> argparse.Namespace:
         help="Which output formats to write (default: all three)",
     )
     p.add_argument("--model", default=DEFAULT_MODEL_ID, help="ASR model id")
+    p.add_argument(
+        "--chunk-minutes", type=float, default=2.0,
+        help="Split recordings longer than this into silence-aligned chunks before ASR "
+        "(reduces memory use on long recordings); pass 0 to disable and transcribe in one shot",
+    )
     p.add_argument("--no-diarization", action="store_true", help="Skip speaker diarization")
     p.add_argument("--diarization-model", default=DEFAULT_DIARIZATION_MODEL_ID)
     p.add_argument("--num-speakers", type=int, default=None, help="Exact speaker count, if known")
@@ -151,7 +156,9 @@ def main(argv: list[str] | None = None) -> int:
                 wav_path = audio.convert_to_wav(src, tmp_dir)
                 duration = audio.get_duration_seconds(wav_path)
 
-                asr_result = asr.transcribe(wav_path, duration_sec=duration)
+                asr_result = asr.transcribe_long_form(
+                    wav_path, duration_sec=duration, chunk_minutes=args.chunk_minutes, tmp_dir=tmp_dir
+                )
 
                 if diarize_enabled:
                     turns = diarizer.diarize(

@@ -37,6 +37,7 @@ python transcribe.py recordings/ -r                # + subfolders
 python transcribe.py interview1.m4a --no-diarization   # faster, plain transcript
 python transcribe.py recordings/ -o transcripts/    # write outputs to a separate folder
 python transcribe.py interview1.m4a --num-speakers 2  # hint speaker count if known
+python transcribe.py interview1.m4a --chunk-minutes 5 # bigger ASR chunks (default: 2)
 ```
 
 By default every audio file gets three outputs next to it: `.txt`, `.srt`, `.json`. Restrict with
@@ -82,12 +83,19 @@ own short recording at that path to exercise them locally.
   consistent within one file, not across files.
 - Diarization and ASR are two separate models; speaker boundaries are lined up with word
   timestamps by overlap, so a mislabeled word near a speaker change is possible on crosstalk.
-- Long recordings (>20 min) automatically switch the ASR encoder to windowed ("local")
-  attention to keep memory bounded, per NVIDIA's guidance — a small potential accuracy trade-off
-  versus short clips.
+- Recordings longer than `--chunk-minutes` (default 2) are split into chunks at nearby silence
+  before ASR, then stitched back together — diarization still runs on the full file in one pass,
+  since pyannote already handles long-form audio internally. This exists because NeMo's own
+  long-audio mitigation (switching to windowed "local" attention above 20 min) was found to both
+  hit an unimplemented op on some MPS (Apple Silicon) setups and use far more memory than its
+  "bounded" design suggests (19+ GB observed for a 21-minute recording on a 16 GB Mac) — chunking
+  keeps each piece well below that 20-minute threshold so it's rarely if ever exercised. Pass
+  `--chunk-minutes 0` to disable and transcribe in one shot (not recommended on long recordings
+  without plenty of RAM). Decoding right at a chunk boundary can differ very slightly from a
+  single continuous pass, since the encoder has less surrounding context there.
 - Device is auto-detected (CUDA > Apple Silicon MPS > CPU); override with `--device`. Parakeet is
   built/tested by NVIDIA on CUDA GPUs — CPU/MPS work but are slower, and if an op isn't supported
-  on MPS the script automatically falls back to CPU with a warning.
+  on MPS at model-load time the script automatically falls back to CPU with a warning.
 - With `-o`/`--output-dir` and `-r`/`--recursive` together, two input files with the same name in
   different subfolders will overwrite each other's output — keep filenames unique or run per
   subfolder in that case.
